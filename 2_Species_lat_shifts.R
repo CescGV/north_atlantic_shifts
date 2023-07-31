@@ -1,7 +1,7 @@
 ### 
 ### Paper: Species geographical latitudinal shifts in the North - Norwegian - Barents Seas
 ### Author: Cesc Gordó-Vilaseca
-### Date: 25.05.2023
+### Date: 31.07.2023
 setwd("../Final code")
 ### 1. Load library and data ############################################
 
@@ -54,7 +54,17 @@ ggplot(unique(data_off[,c("Longitude", "Latitude", "Year", "Region")])) + geom_b
 
 ggplot(unique(data_off[,c("Longitude", "Latitude", "Year", "Region")])) + geom_boxplot(aes(x = Year, y = Latitude, group = Year)) + 
   facet_wrap(.~ Region)
+
+#number of records
 nrow(data_off)
+
+#Number of sites
+nrow(unique(data_off[,c("Longitude", "Latitude", "Year", "Region")])) 
+table(unique(data_off[,c("Longitude", "Latitude", "Year", "Region")])$Region) 
+
+
+range(data_off$Latitude); range(data_off$Longitude)
+
 # To take into account this variability across years, I add one 
 # variable of anual mean latitude of the surveys in each point,
 # which will be included in the regression
@@ -76,7 +86,7 @@ data_off %>% select(Year, Region, Longitude, Latitude) %>% distinct() %>%
   group_by(Region, Year) %>% count() %>% print(n = 200)
 # Very little data in the Norwegian Sea in 2001... keep in mind
 
-## I eliminate pecies with less than ry sites per year, and less than yr years 
+## I eliminate species with less than ry sites per year, and less than yr years 
 ## of data in each region
 
 ry = 5
@@ -107,12 +117,15 @@ unique(data_off$Species) # 83
 
 write.csv(data_off, "../data/data_offshore_regional_realized_shift.csv")
 
+data_off %>% group_by(Species, Region) %>% count() %>% arrange(n)
+data_off %>% group_by(Species, Region) %>% count() %>% arrange(n) %>% tail(10)
 
 ### 4. Loop to calculate each species geographic shift
 pin_f = list()
 data_original = list()
 models_lat_regions = list()
-
+models_lat_fig = list()
+col_list= list("darkred", "gold3", "aquamarine3")
 for (k in 1:length(unique(data_off$Region))) { 
   Region = unique(data_off$Region)[k]
   data = data_off %>% filter(Region == unique(data_off$Region)[k]) %>%
@@ -122,6 +135,7 @@ for (k in 1:length(unique(data_off$Region))) {
   pin = list()
   data_orig = list()
   
+  models_fig = list()
   models_lat = list()
   for (i in 1:length(unique(data$Species))){
     
@@ -155,10 +169,15 @@ for (k in 1:length(unique(data_off$Region))) {
                           lat_dev = lat_dev,  lat_std_error = lat_std_error)
     data_orig[[i]] = data_sp
     models_lat[[i]] = model_lat
+    models_fig[[i]] = sjPlot::plot_model(model_lat, terms = "Year", type = "pred", show.data = T, col = col_list[[k]]) +
+    ggtitle(x) + ylab("Latitude (°)") + theme(plot.title = element_text(face = "italic"),
+                                              title = element_text(size=10))
+
   }
   pin_f[[k]]= do.call(rbind, pin)
   data_original[[k]] = do.call(rbind, data_orig)
   models_lat_regions[[k]] = models_lat
+  models_lat_fig[[k]] = models_fig
   
 }
 
@@ -227,30 +246,25 @@ write.csv(realized_slope, "../data/species_lat_shifts_slopes.csv")
 
 ## 6. Figures for Supplementary material of each species ####
 
-realized_shifts_sig_lat = left_join(realized_slope, realized_acent) %>% filter(lat_p < 0.05)
+models_figures = c(models_lat_fig[[1]],models_lat_fig[[2]], models_lat_fig[[3]])
 
-pdf("../figures/Figure_S2_barents_sea_species_shifts.pdf", width = 6, height = 6)
-ggplot(filter(realized_shifts_sig_lat,Region == "Barents Sea"),
-       aes(x = Year, y = mean_lat)) + 
-  geom_point() +  geom_smooth(method = "lm") + ylab("Mean latitude (°)") +
-  facet_wrap(.~ Species, scale = "free") + 
-  theme(strip.text = element_text(face = "italic"))
+which(realized_slope$lat_p < 0.05)
+length(which(realized_slope$lat_p < 0.05))
+
+bar_figs = models_figures[which(realized_slope$lat_p < 0.05)[1:8]]
+now_figs = models_figures[which(realized_slope$lat_p < 0.05)[9:12]]
+nor_figs = models_figures[which(realized_slope$lat_p < 0.05)[13:29]]
+
+pdf("../figures/Figure_S2_barents_sea_species_shifts.pdf", width = 7, height = 6)
+gridExtra::grid.arrange(grobs = bar_figs)
 dev.off()
 
-pdf("../figures/Figure_S3_norwegian_sea_species_shifts.pdf", width = 4.2, height = 4)
-ggplot(filter(realized_shifts_sig_lat,Region == "Norwegian Sea"),
-       aes(x = Year, y = mean_lat)) + 
-  geom_point() +  geom_smooth(method = "lm") + ylab("Mean latitude (°)") +
-  facet_wrap(.~ Species, scale = "free") + 
-  theme(strip.text = element_text(face = "italic"))
+pdf("../figures/Figure_S3_norwegian_sea_species_shifts.pdf", width = 5.2, height = 4)
+gridExtra::grid.arrange(grobs = now_figs)
 dev.off()
 
-pdf("../figures/Figure_S4_north_sea_species_shifts.pdf", width = 8)
-ggplot(filter(realized_shifts_sig_lat,Region == "North Sea"),
-       aes(x = Year, y = mean_lat)) + 
-  geom_point() +  geom_smooth(method = "lm") + ylab("Mean latitude (°)") +
-  facet_wrap(.~ Species, scale = "free") + 
-  theme(strip.text = element_text(face = "italic"))
+pdf("../figures/Figure_S4_north_sea_species_shifts.pdf", width = 8, height = 11)
+gridExtra::grid.arrange(grobs = nor_figs, ncol = 3)
 dev.off()
 
 ## 7. MAP FIGURE 1 AND FIGURE S1 ####
@@ -288,7 +302,8 @@ pdf("../figures/Figure_S1.pdf")
 
 ggplot(unique(data_off[,c("Longitude", "Latitude", "Year", "Region")])) + 
   geom_polygon(data = no_balt, aes(x = long, y = lat, group = group), colour = "black", fill = NA) + 
-  geom_point(aes(x = Longitude, y = Latitude, col = Region)) + 
+  geom_point(aes(x = Longitude, y = Latitude, col = Region), size = 0.4) + 
+  ylab("Latitude (°)") + xlab("Longitude (°)")+
   theme_bw() + 
   facet_wrap(.~Year, ncol = 5) +  
   scale_color_manual(values = c("darkred", "aquamarine3", "gold3"))
