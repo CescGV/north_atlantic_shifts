@@ -320,19 +320,17 @@ summary(model9)
 
 a = effects::predictorEffects(model0)$TempPrefMean 
 b = effects::predictorEffects(model1)$Zoo_final
-c = effects::predictorEffects(model3)$Troph
 
-d = effects::predictorEffects(model8)$AgeMatMin
-e = effects::predictorEffects(model9)$DepthMax
+c = effects::predictorEffects(model8)$AgeMatMin
+d = effects::predictorEffects(model9)$DepthMax
 
 
 pdf("../figures/Figure_5_traits.pdf", width = 10, height = 9)
 gridExtra::grid.arrange(plot(a,main = "Barents Sea" ,xlab = "Preferred temperature (°C)", ylab = "Latitudinal shift (km/yr)", col.line = "darkred", band.colors = "darkred", band.transparency = 0.2), 
                         plot(b,main = "Barents Sea" ,xlab = "Biogeography", ylab = "Latitudinal shift (km/yr)", col.line = "darkred", CI.color = "darkred", band.transparency = 0.2), 
-                        plot(c,main = "Barents Sea" ,xlab = "Trophic level", ylab = "Latitudinal shift (km/yr)", col.line = "darkred", band.colors = "darkred",band.transparency = 0.2),
                         
-                        plot(d,main = "North Sea",xlab ="Minimum age at maturity (yr)" , ylab = "Latitudinal shift (km/yr)", col.line = "aquamarine3", band.colors = "aquamarine3", band.transparency = 0.2),
-                        plot(e,main = "North Sea",xlab ="Maximum depth (m)" , ylab = "Latitudinal shift (km/yr)", col.line = "aquamarine3", band.colors = "aquamarine3", band.transparency = 0.2),
+                        plot(c,main = "North Sea",xlab ="Minimum age at maturity (yr)" , ylab = "Latitudinal shift (km/yr)", col.line = "aquamarine3", band.colors = "aquamarine3", band.transparency = 0.2),
+                        plot(d,main = "North Sea",xlab ="Maximum depth (m)" , ylab = "Latitudinal shift (km/yr)", col.line = "aquamarine3", band.colors = "aquamarine3", band.transparency = 0.2),
                         
                         nrow = 2)
 
