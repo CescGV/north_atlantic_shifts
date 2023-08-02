@@ -1,3 +1,6 @@
+### Paper: Species geographical latitudinal shifts in the North - Norwegian - Barents Seas
+### Author: Cesc Gordó-Vilaseca
+### Date: 02.08.2023
 
 ## 1. Add environmental data ####
 library(tidyverse)
@@ -147,14 +150,17 @@ dv_sp = dv[which(unique(AB_data$Species) %in% selected_sp)]
 range(dv_sp)
 mean(dv_sp)
 
-hist(dv_sp,main = "% Deviance explained of Abundance models", xlab = "% DV explained") # 26
+hist(dv_sp,main = "% Deviance explained of Abundance models", xlab = "% DV explained") 
 
 # Plots
 
+pdf("../figures/Figure_S5_diagnostics.pdf", width = 9, height = 4)
 par(mfrow = c(1,2))
-hist(auc_sp, main = "Histogram of AUC", xlab = "AUC") # 0.89
+hist(auc_sp, main = "Histogram of AUC", xlab = "AUC")
 hist(dv_sp,
-     main = "% Deviance explained of Abundance models", xlab = "% DV explained") # 26
+     main = "% Deviance explained of Abundance models", xlab = "% DV explained")
+
+dev.off()
 
 data_models_diag = data.frame(AUC = auc_sp,
                          DV = dv_sp,
@@ -373,6 +379,8 @@ boxplot(slopes$lat_s ~ slopes$Region)
 abline(h = 0)
 
 # Slopes moving in which direction
+realized_slope = read.csv("../data/species_lat_shifts_slopes.csv") %>% dplyr::select(Species, lat_s, Region) %>% rename(real_lat_s = lat_s)
+slopes = merge(slopes, realized_slope) %>% rename(thermal_lat_s = lat_s)
 
 a = slopes %>% 
   mutate(agreement = case_when(thermal_lat_s > 0 ~ 1,
@@ -389,9 +397,7 @@ table(a$Region, a$agreement_real)
 save(slopes, file = "../data/slopes_thermal_envelope.RData")
 
 
-
 ## 8. Save the table with both realized and thermal envelope shifts ####
-
 
 realized_slope = read.csv("../data/species_lat_shifts_slopes.csv")
 load("../data/slopes_thermal_envelope.RData")
@@ -403,9 +409,10 @@ realized_slope = realized_slope %>% dplyr::select(Species, n, Region, lat_s, lat
   rename(lat_r_s = lat_s, lat_r_p = lat_p, lat_r_dev = lat_dev)
 
 
-slopes_table = left_join(realized_slope, slopes) %>% dplyr::select(Species, Region, n, lat_r_s, lat_r_dev, lat_r_p, lat_s, lat_d, lat_p)
+slopes_table = left_join(realized_slope, slopes) %>% dplyr::select(Species, Region, n, lat_r_s, lat_r_dev, lat_r_p, thermal_lat_s, lat_d, lat_p) %>%
+  mutate(lat_s = thermal_lat_s*111,
+          Region = case_when(Region == "Barents Sea" ~ "Bar", 
+                            Region == "Norwegian Sea" ~ "Now",
+                            Region == "North Sea" ~ "Nor"))
+
 write.csv(slopes_table, "../figures/slopes_table.csv")
-
-
-
-
