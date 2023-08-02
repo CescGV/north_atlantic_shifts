@@ -10,7 +10,7 @@ library(tidyverse)
 library(mgcv)
 
 # Data
-data_full = read.csv("../data/data_ready1.csv") # Dataset after 1st filtration
+data_full = read.csv("../data/data_ready.csv") # Dataset after 1st filtration
 fish_list = read.csv("../data/fish_list_johannesen_2021.csv") # Species list allowed in Barents Sea Surveys
 traits = read.csv("../data/Species_traits.csv")
 
