@@ -1,7 +1,6 @@
-# At the end of this script, I should have a dataset fully clean and complete with: 
-# 180.851 Species records, with biomass, abundance, traits and env. variables
-# Distributed across 15626 trawls (Long, Lat, Year, Month)
-
+### Paper: Species geographical latitudinal shifts in the North - Norwegian - Barents Seas
+### Author: Cesc Gordó-Vilaseca
+### Date: 02.08.2023
 
 ## Cleaning the original dataset #####
 library(tidyverse)
@@ -52,9 +51,9 @@ boxplot(data_quality$Distance  ~ data_quality$Year, ylim = c(0,5))
 shrimp_trawl <- data_quality %>% 
   mutate(Distance_in_m = data_quality$Distance *1852,
          swept_area = (Opening * Distance_in_m)/1000000)  %>% 
-  filter(Opening < 100, Distance_in_m < 20000) # This eliminates some outliers
+  filter(Opening < 60, Distance_in_m < 5000) # This eliminates some outliers
 
-# 276 788
+# 270 190
 ## Negative trend of swept_area with time, which needs to be considered
 boxplot(shrimp_trawl$swept_area ~ shrimp_trawl$Year)
 
@@ -67,7 +66,7 @@ data_clean <- shrimp_trawl %>% filter(grepl(' ', valid_name), class %in% c("Acti
                                                                            "Petromyzonti")) %>% dplyr::rename(Species = valid_name) %>% # 214 207
   dplyr::select(Species, Year, Month, Longitude, Latitude, Bot_depth, Total_weight, Total_abund, Distance_in_m, swept_area)
 
-## Remaining records --> 214 267
+## Remaining records --> 213 638
 ### Correcting detected mistakes 
 
 # Surprising but possible
@@ -111,7 +110,7 @@ hist(data_clean$Bot_depth)
 data_clean = filter(data_clean, Bot_depth < 601); hist(data_clean$Bot_depth)
 unique(data_clean$Species) # 182
 
-## 216 155
+## 211 389
 
 # Before adding the North Sea data, I want to make sure that I 
 # can distinguish both datasets
@@ -130,7 +129,7 @@ colnames(north_sea)
 data_clean = data_clean %>% dplyr::select(-Distance_in_m)
 north_sea = north_sea %>% dplyr::select(colnames(data_clean))
 
-# I add north sea data from ICES --> 216 155 + 271 725 = 487 880 records
+# I add north sea data from ICES --> 211 389 + 271 725 = 483 114 records
 data_clean = rbind(data_clean, north_sea) 
 sum(is.na(data_clean))
 #ALL DATA
@@ -139,12 +138,12 @@ orig_data = data_clean %>%
   mutate(Site = paste(Longitude, Latitude, Year, Month, Bot_depth, swept_area)) %>%
   filter(Latitude > 0)
 
-# The cleaned data without considering Months or homogeneity of trawl consists of 402 190 species records
+# The cleaned data without considering Months or homogeneity of trawl consists of 483 114 species records
 # Now I want to achieve temporal and spatial homogeneity. To do so, I only need sites, not species. 
 
 sites = orig_data %>% ungroup() %>% dplyr::select(-Species, swept_area, -Abundance, -Biomass) %>% distinct()
 
-# Sites: 38 495
+# Sites: 36 446
 
 ## GEOGRAPHICAL PARTITIONING ####
 ggplot(sites) + geom_point(aes(x = Longitude, y = Latitude)) + facet_wrap(.~ Year)
@@ -167,7 +166,7 @@ ggplot(north_data) +
 
 all_data = rbind(barents_sea_data, norwegian_sea_data, north_data)
 
-dim(unique(all_data)) # 36 886
+dim(unique(all_data)) # 35 082
 summary(all_data)
 
 # Monthly distribution 
@@ -178,7 +177,7 @@ table(all_data$Month[all_data$Source == "IMR" & all_data$Region == "North Sea"],
       all_data$Year[all_data$Source == "IMR" & all_data$Region == "North Sea"])
 
 # Here everything looks quite ok. Even though July was only sampled after 2000, August was from the 
-# beggining, and July is not a dominant month of sampling
+# beginning, and July is not a dominant month of sampling
 
 table(all_data$Month[all_data$Source == "ICES-DATRAS" & all_data$Region == "North Sea"],
       all_data$Year[all_data$Source == "ICES-DATRAS" & all_data$Region == "North Sea"])
@@ -205,7 +204,7 @@ all_data = rbind(barents_sea_data, norwegian_sea_data, north_data) %>%
 
 ggplot(filter(all_data, Season == "Summer")) + geom_point(aes(x = Longitude, y = Latitude)) + facet_wrap(.~ Year)
 
-dim(unique(all_data)) # 36 886
+dim(unique(all_data)) # 35 082
 
 # Monthly distribution 
 table(all_data$Year,all_data$Season,  all_data$Region)
@@ -243,7 +242,7 @@ all_data = all_data %>% filter((Region == "North Sea" & Season == "Summer") |
 ggplot(all_data) +
   geom_point(aes(x = Longitude, y = Latitude, col = Region)) + facet_wrap(.~ Year)
 unique(all_data$Region)
-# 15 969
+# 15 408
 
 ## Environmental variables addition
 
@@ -279,13 +278,12 @@ ggplot(df_f) + geom_point(aes(x = Longitude, y = Latitude, col = Region)) + face
 ggplot(filter(df_f, coast_off_20 == "coastal")) + 
   geom_point(aes(x = Longitude, y = Latitude, col = Region)) + facet_wrap(.~ Year)
 
-
-nrow(df_f)# 15 969
+nrow(df_f)# 15 408
 colSums(is.na(df_f))
 # Now I merge the environmental data in df_f with the 
 # biological data in orig_data. 
 
-data_fin = left_join(df_f, orig_data) # 202 006
+data_fin = left_join(df_f, orig_data) # 200 191
 
 data_fin = data_fin %>% filter(!is.na(Region))
 unique(data_fin$Species) # 198 species
@@ -296,6 +294,7 @@ data_fin %>% filter(Region != "North Sea") %>% ungroup() %>% dplyr::select(Speci
 
 # Number of species from the ICES database after cleaning
 # 129
+
 data_fin %>% filter(Region == "North Sea") %>% ungroup() %>% dplyr::select(Species) %>% distinct()
 
 ## Trait Addition ####
@@ -304,6 +303,7 @@ traits_db = read.csv("../Species_traits.csv", header = T)
 data_traits = left_join(data_fin, traits_db, by = "Species") 
 
 unique(data_traits$Species) # 198 Species
-
-# 199 715 records in 15 371 hauls
+dim(data_traits)
+length(unique(data_traits$Site))
+# 200 191 records in 15 408 hauls
 write.csv(data_traits, "../data/data_ready.csv")
