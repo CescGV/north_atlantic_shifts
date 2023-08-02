@@ -1,28 +1,25 @@
 ### 
 ### Paper: Species geographical latitudinal shifts in the North - Norwegian - Barents Seas
 ### Author: Cesc Gordó-Vilaseca
-### Date: 31.07.2023
-setwd("../Final code")
+### Date: 02.08.2023
+
 ### 1. Load library and data ############################################
 
 # Library 
 library(tidyverse)
 library(mgcv)
-detach("package:raster", unload=TRUE) # In case it's loaded from previous script
-
 
 # Data
-data_full = read.csv("../data/data_ready.csv") # Dataset after 1st filtration
+data_full = read.csv("../data/data_ready1.csv") # Dataset after 1st filtration
 fish_list = read.csv("../data/fish_list_johannesen_2021.csv") # Species list allowed in Barents Sea Surveys
 traits = read.csv("../data/Species_traits.csv")
 
-
 ### 2. Second data filtration: sites ############################################
 
-# I filter the data to only use the species in Johannesen et al. 2019 for the IMR data
+# I filter the data to only use the species in Johannesen et al. 2021 for the IMR data
 # (Norwegian and Barents Sea). Also, I discard winter data for standardisation
 # For the Barents Sea, I only keep data after 2004, because it's what the 
-# data collectors recommended. I also fitler out coastal data. 
+# data collectors recommended. I also filter out coastal data. 
 
 data_off = data_full %>% 
   filter(((Species %in% fish_list$Species & Region != "North Sea") | (Region == "North Sea")),
@@ -113,14 +110,16 @@ unique(data_off$Species[data_off$Region == "Norwegian Sea"]) # 26 sp
 unique(data_off$Species[data_off$Region == "North Sea"]) # 58 sp
 unique(data_off$Species) # 83
 
-# Save this data, for example to count the number of records in each species
-
+# Save this data
 write.csv(data_off, "../data/data_offshore_regional_realized_shift.csv")
 
 data_off %>% group_by(Species, Region) %>% count() %>% arrange(n)
 data_off %>% group_by(Species, Region) %>% count() %>% arrange(n) %>% tail(10)
 
-### 4. Loop to calculate each species geographic shift
+# Number of sites
+table(unique(data_off[,c("Longitude", "Latitude", "Year", "Region")])$Region) 
+
+### 4. Loop to calculate each species' geographic shift
 pin_f = list()
 data_original = list()
 models_lat_regions = list()
@@ -215,7 +214,7 @@ points(means, pch=20, cex=1.5, col = "white")
 
 
 abline(h =0, lty = 5)
-text(1, 14, expression("*"), cex = 2) 
+text(1, 14, expression(""), cex = 2) 
 text(3, 14, expression("*"), cex = 2) 
 
 text(1, -14, expression("n = 35"), cex = 1.5) 
@@ -225,14 +224,12 @@ text(3, -14, expression("n = 58"), cex = 1.5)
 
 dev.off()
 # Statistical differences
-shapiro.test(realized_slope$lat_s[realized_slope$Region == "Barents Sea"]) # Not significant
+shapiro.test(realized_slope$lat_s[realized_slope$Region == "Barents Sea"]) # Significant
 shapiro.test(realized_slope$lat_s[realized_slope$Region == "Norwegian Sea"]) # Not significant
 shapiro.test(realized_slope$lat_s[realized_slope$Region == "North Sea"]) # Significant
 
-
 # Non-parametric test
-
-wilcox.test(realized_slope$lat_s[realized_slope$Region == "Barents Sea"], conf.int = T, correction = F) # Significant
+wilcox.test(realized_slope$lat_s[realized_slope$Region == "Barents Sea"], conf.int = T, correction = T) # Not significant
 wilcox.test(realized_slope$lat_s[realized_slope$Region == "Norwegian Sea"], conf.int = T,correction = F) # Not significant
 wilcox.test(realized_slope$lat_s[realized_slope$Region == "North Sea"], conf.int = T) # Significant
 
@@ -240,7 +237,6 @@ wilcox.test(realized_slope$lat_s[realized_slope$Region == "North Sea"], conf.int
 t.test(realized_slope$lat_s[realized_slope$Region == "Barents Sea"], conf.int = T) # Significant
 t.test(realized_slope$lat_s[realized_slope$Region == "Norwegian Sea"], conf.int = T) # Not significant
 t.test(realized_slope$lat_s[realized_slope$Region == "North Sea"], conf.int = T) # Not significant
-
 
 write.csv(realized_slope, "../data/species_lat_shifts_slopes.csv")
 
@@ -251,11 +247,11 @@ models_figures = c(models_lat_fig[[1]],models_lat_fig[[2]], models_lat_fig[[3]])
 which(realized_slope$lat_p < 0.05)
 length(which(realized_slope$lat_p < 0.05))
 
-bar_figs = models_figures[which(realized_slope$lat_p < 0.05)[1:8]]
-now_figs = models_figures[which(realized_slope$lat_p < 0.05)[9:12]]
-nor_figs = models_figures[which(realized_slope$lat_p < 0.05)[13:29]]
+bar_figs = models_figures[which(realized_slope$lat_p < 0.05)[1:9]]
+now_figs = models_figures[which(realized_slope$lat_p < 0.05)[10:13]]
+nor_figs = models_figures[which(realized_slope$lat_p < 0.05)[14:30]]
 
-pdf("../figures/Figure_S2_barents_sea_species_shifts.pdf", width = 7, height = 6)
+pdf("../figures/Figure_S4_barents_sea_species_shifts.pdf", width = 7, height = 6)
 gridExtra::grid.arrange(grobs = bar_figs)
 dev.off()
 
@@ -263,7 +259,7 @@ pdf("../figures/Figure_S3_norwegian_sea_species_shifts.pdf", width = 5.2, height
 gridExtra::grid.arrange(grobs = now_figs)
 dev.off()
 
-pdf("../figures/Figure_S4_north_sea_species_shifts.pdf", width = 8, height = 11)
+pdf("../figures/Figure_S2_north_sea_species_shifts.pdf", width = 8, height = 11)
 gridExtra::grid.arrange(grobs = nor_figs, ncol = 3)
 dev.off()
 
@@ -289,7 +285,7 @@ base_map = ggplot() +
 
 surveys_map = distinct(data_off[,c("Longitude", "Latitude", "Year", "Region")])
 
-pdf("../figures/Figure_2_Study_area.pdf", width = 7, height = 6)
+pdf("../figures/Figure_2_Study_area_raw.pdf", width = 7, height = 6)
 
 base_map + geom_point(data = surveys_map, aes(x = Longitude, y = Latitude, col = Region), size = 0.9) + 
   scale_color_manual(values=c("darkred", "aquamarine3", "gold3"))+
@@ -330,7 +326,6 @@ df_sf_buff = as(df_sf_buff, "SpatialPolygonsDataFrame")
 
 writeOGR(df_sf_buff, ".", "barents_poly", 
          driver = "ESRI Shapefile")
-
 
 #Norwegian
 df <- data_off %>% filter(Region == "Norwegian Sea") %>%
