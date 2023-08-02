@@ -279,11 +279,14 @@ model0 = gls(real_lat_s ~ TempPrefMean + records, weights = varPower(form = ~ re
 model1 = gls(real_lat_s ~ Zoo_final + records, weights = varPower(form = ~ records), data = na.omit(bar_trait[,c("real_lat_s", "records", "Zoo_final")]))
 model2 = gls(real_lat_s ~ DemersPelag + records, weights = varPower(form = ~ records), data = na.omit(bar_trait[,c("real_lat_s", "records", "DemersPelag")]))
 model3 = gls(real_lat_s ~ Troph + records, weights = varPower(form = ~ records), data = na.omit(bar_trait[,c("real_lat_s", "records", "Troph")]))
+model4 = gls(real_lat_s ~ TempRange + records, weights = varPower(form = ~ records), data = na.omit(bar_trait[,c("real_lat_s", "records", "TempRange")]))
 
 summary(model0)
 summary(model1)
 summary(model2)
 summary(model3)
+summary(model4)
+
 
 plot(predictorEffects(model0)) 
 plot(predictorEffects(model1)) 
@@ -294,13 +297,14 @@ cor(slopes_traits[slopes_traits$Region == "Barents Sea",]$real_lat_s,predict(mod
 cor(slopes_traits[slopes_traits$Region == "Barents Sea",]$real_lat_s,predict(model1))^2
 cor(slopes_traits[slopes_traits$Region == "Barents Sea",]$real_lat_s,predict(model2))^2
 cor(slopes_traits[slopes_traits$Region == "Barents Sea",]$real_lat_s,predict(model3))^2
+cor(slopes_traits[slopes_traits$Region == "Barents Sea",]$real_lat_s,predict(model4))^2
 
 
 # Norwegian Sea 
 
-model4 = gls(real_lat_s ~ TempPrefMean, data = now_trait)
-model5 = gls(real_lat_s ~ DemersPelag,data = now_trait)
-model6 = gls(real_lat_s ~ Zoo_final,data = now_trait)
+model5 = gls(real_lat_s ~ TempPrefMean, data = now_trait)
+model6 = gls(real_lat_s ~ DemersPelag,data = now_trait)
+model7 = gls(real_lat_s ~ Zoo_final,data = now_trait)
 
 summary(model4)
 summary(model5)
@@ -316,31 +320,21 @@ summary(model9)
 
 a = effects::predictorEffects(model0)$TempPrefMean 
 b = effects::predictorEffects(model1)$Zoo_final
-c = effects::predictorEffects(model2)$DemersPelag
-d = effects::predictorEffects(model3)$Troph
+c = effects::predictorEffects(model3)$Troph
 
-e = effects::predictorEffects(model4)$TempPrefMean
-f = effects::predictorEffects(model5)$DemersPelag
-g = effects::predictorEffects(model6)$Zoo_final
-
-i = effects::predictorEffects(model8)$AgeMatMin
-j = effects::predictorEffects(model9)$DepthMax
+d = effects::predictorEffects(model8)$AgeMatMin
+e = effects::predictorEffects(model9)$DepthMax
 
 
 pdf("../figures/Figure_5_traits.pdf", width = 10, height = 9)
 gridExtra::grid.arrange(plot(a,main = "Barents Sea" ,xlab = "Preferred temperature (°C)", ylab = "Latitudinal shift (km/yr)", col.line = "darkred", band.colors = "darkred", band.transparency = 0.2), 
                         plot(b,main = "Barents Sea" ,xlab = "Biogeography", ylab = "Latitudinal shift (km/yr)", col.line = "darkred", CI.color = "darkred", band.transparency = 0.2), 
-                        plot(c,main = "Barents Sea" ,xlab = "Habitat", ylab = "Latitudinal shift (km/yr)", col.line = "darkred", confint = list(color = "darkred"), band.transparency = 0.2),
-                        plot(d,main = "Barents Sea" ,xlab = "Trophic level", ylab = "Latitudinal shift (km/yr)", col.line = "darkred", band.colors = "darkred",band.transparency = 0.2),
+                        plot(c,main = "Barents Sea" ,xlab = "Trophic level", ylab = "Latitudinal shift (km/yr)", col.line = "darkred", band.colors = "darkred",band.transparency = 0.2),
                         
+                        plot(d,main = "North Sea",xlab ="Minimum age at maturity (yr)" , ylab = "Latitudinal shift (km/yr)", col.line = "aquamarine3", band.colors = "aquamarine3", band.transparency = 0.2),
+                        plot(e,main = "North Sea",xlab ="Maximum depth (m)" , ylab = "Latitudinal shift (km/yr)", col.line = "aquamarine3", band.colors = "aquamarine3", band.transparency = 0.2),
                         
-                        plot(e, main = "Norwegian Sea",xlab = "Preferred temperature (°C)",ylab = "Latitudinal shift (km/yr)", col.line = "gold3", band.colors = "gold3", band.transparency = 0.2), 
-                        plot(f, main = "Norwegian Sea",xlab = "Habitat",ylab = "Latitudinal shift (km/yr)", col.line = "gold3", band.colors = "gold3", band.transparency = 0.2), 
-                        plot(g, main = "Norwegian Sea",xlab = "Biogeography",ylab = "Latitudinal shift (km/yr)", col.line = "gold3", band.colors = "gold3", band.transparency = 0.2), 
+                        nrow = 2)
 
-                        plot(i,main = "North Sea",xlab ="Minimum age at maturity (yr)" , ylab = "Latitudinal shift (km/yr)", col.line = "aquamarine3", band.colors = "aquamarine3", band.transparency = 0.2),
-                        plot(j,main = "North Sea",xlab ="Maximum depth (m)" , ylab = "Latitudinal shift (km/yr)", col.line = "aquamarine3", band.colors = "aquamarine3", band.transparency = 0.2),
-                        
-                        nrow = 3)
 
 dev.off()
