@@ -6,6 +6,7 @@ library(nlme)
 library(effects)
 library(tidyverse)
 library(effects)
+detach("package:raster", unload=TRUE) # In case it's loaded from previous script
 
 realized_slope = read.csv("../data/species_lat_shifts_slopes.csv")
 load("../data/slopes_thermal_envelope.RData")
@@ -14,7 +15,7 @@ slopes_realized = realized_slope %>% #filter(lat_p < 0.05) %>%
   dplyr::select(Species, lat_s, Region) %>%
   rename(real_lat_s = lat_s)
 
-slopes = left_join(slopes_realized, slopes) %>% rename(thermal_lat_s = lat_s) 
+slopes = left_join(slopes_realized, slopes) 
 
 # Add a variable for species records
 rec_data = read.csv("../data/data_offshore_regional_realized_shift.csv")
@@ -30,7 +31,7 @@ slopes = left_join(slopes, rec_data)
 slopes$thermal_lat_s = slopes$thermal_lat_s * 111
 
 # Shorten species names for better graphic representatin
-slopes$Species = paste(substr(slopes$Species, 0, 1), ".", substr(slopes$Species, 2, 1),sub(".*? ", "", slopes$Species), sep = "")
+slopes$Species_l = paste(substr(slopes$Species, 0, 1), ".", substr(slopes$Species, 2, 1),sub(".*? ", "", slopes$Species), sep = "")
 # I create numbers to make raeding easier: 
 code = data.frame(Species = unique(slopes$Species), ID = as.character(c(1:length(unique(slopes$Species)))))
 slopes = left_join(slopes, code)
@@ -42,7 +43,7 @@ a = ggplot(filter(slopes, Region == "Barents Sea")) +
   geom_point(aes(x = thermal_lat_s, y = real_lat_s), alpha = 0.6) + theme_bw() + 
   geom_abline(slope = 1, col = "red", linetype = "dashed") + 
   #scale_color_gradient2(low = "khaki", mid = "springgreen4", high = "navyblue", midpoint= range(bar_f$Var)[2]/2,  space ="Lab") + 
-  geom_text(aes(x = thermal_lat_s, y = real_lat_s, label = Species),alpha = 0.6, size = 3) 
+  geom_text(aes(x = thermal_lat_s, y = real_lat_s, label = Species_l),alpha = 0.6, size = 3) 
 
 b = ggplot(filter(slopes, Region == "Norwegian Sea")) +
   ggtitle("Norwegian Sea") + xlab("Thermal niche latitudinal shift (km/yr)") +
@@ -50,7 +51,7 @@ b = ggplot(filter(slopes, Region == "Norwegian Sea")) +
   geom_point(aes(x = thermal_lat_s, y = real_lat_s), alpha = 0.6) + theme_bw() +
   geom_abline(slope = 1, col = "red", linetype = "dashed") + 
   #scale_color_gradient2(low = "khaki", mid = "springgreen4", high = "navyblue", midpoint= range(bar_f$Var)[2]/2,  space ="Lab") + 
-  geom_text(aes(x = thermal_lat_s, y = real_lat_s, label = Species),alpha = 0.6, size = 3) 
+  geom_text(aes(x = thermal_lat_s, y = real_lat_s, label = Species_l),alpha = 0.6, size = 3) 
 
 c = ggplot(filter(slopes, Region == "North Sea")) + 
   ggtitle("North Sea") + xlab("Thermal niche latitudinal shift (km/yr)") + 
@@ -58,7 +59,7 @@ c = ggplot(filter(slopes, Region == "North Sea")) +
   geom_point(aes(x = thermal_lat_s, y = real_lat_s), alpha = 0.6) + theme_bw() + 
   geom_abline(slope = 1, col = "red", linetype = "dashed") + 
   #scale_color_gradient2(low = "khaki", mid = "springgreen4", high = "navyblue", midpoint= range(bar_f$Var)[2]/2,  space ="Lab") + 
-  geom_text(aes(x = thermal_lat_s, y = real_lat_s, label = Species),alpha = 0.6, size = 3) 
+  geom_text(aes(x = thermal_lat_s, y = real_lat_s, label = Species_l),alpha = 0.6, size = 3) 
 
 # Arrange the plots ina  pdf file
 pdf("../figures/Figure_4_corr_lat_therm.pdf", width = 4, height = 8)
@@ -141,7 +142,7 @@ pval = ggplot(data = final_cor_tests,aes(x = n, y = pval, col = region)) +
   xlab("Number of species") + scale_color_discrete(name="") + ylab("p-value")
 
 
-pdf("../figures/Supplementary cumulative species correlations.pdf", width = 7, height = 5)
+pdf("../figures/Figure_S6_correlations_cumulative.pdf", width = 7, height = 5)
 gridExtra::grid.arrange(pears,pval)
 dev.off()
 
@@ -214,7 +215,6 @@ summary(gls(real_lat_s ~ DemersPelag + records, weights = varPower(form = ~ reco
 summary(gls(real_lat_s ~ AgeMatMin + records, weights = varPower(form = ~ records), data = na.omit(bar_trait[,c("real_lat_s", "records", "AgeMatMin")])))
 summary(gls(real_lat_s ~ Fecundity + records, weights = varPower(form = ~ records), data = na.omit(bar_trait[,c("real_lat_s", "records", "Fecundity")])))
 summary(gls(real_lat_s ~ Zoo_final + records, weights = varPower(form = ~ records), data = bar_trait)) # significant
-summary(gls(real_lat_s ~ Fisheries + records, weights = varPower(form = ~ records), data = bar_trait))
 
 ## In the Barents Sea, significant traits are TempPrefMean, DemersPelag and Zoo_final
 ## If considered together, only Zoo_final, the biogeographic trait, resists
@@ -249,13 +249,7 @@ plot(gls(real_lat_s ~ AgeMatMin, data = nor_trait[!is.na(nor_trait$AgeMatMin),],
 
 
 summary(lm(real_lat_s ~ DemersPelag, data = nor_trait))
-summary(lm(real_lat_s ~ slimit_book, data = nor_trait)) # Significant
-summary(lm(real_lat_s ~ nlimit_book, data = nor_trait)) 
-summary(lm(real_lat_s ~ Zoo_FB, data = nor_trait)) 
-summary(lm(real_lat_s ~ Zoo_final, data = nor_trait)) # Almost
-summary(lm(real_lat_s ~ Fisheries, data = nor_trait)) 
-sjPlot::plot_model(lm(real_lat_s ~ Fisheries, data = nor_trait), "pred")
-sjPlot::plot_model(lm(real_lat_s ~ slimit_book, data = nor_trait), "pred")
+summary(lm(real_lat_s ~ Zoo_final, data = nor_trait)) 
 
 #Norwegian Sea
 now_trait = slopes_traits[slopes_traits$Region == "Norwegian Sea",]
@@ -267,17 +261,11 @@ summary(lm(real_lat_s ~ MaxLengthTL, data = now_trait))
 summary(lm(real_lat_s ~ Troph, data = now_trait))  
 summary(lm(real_lat_s ~ Fecundity, data = now_trait))
 summary(lm(real_lat_s ~ AgeMatMin, data = now_trait)) 
-summary(lm(real_lat_s ~ DemersPelag, data = now_trait)) # Close to significant
-summary(lm(real_lat_s ~ slimit_book, data = now_trait)) 
-summary(lm(real_lat_s ~ nlimit_book, data = now_trait)) 
-
-summary(lm(real_lat_s ~ Zoo_final, data = now_trait)) # Close to significant
-summary(lm(real_lat_s ~ Fisheries, data = now_trait)) # Close to significant
+summary(lm(real_lat_s ~ DemersPelag, data = now_trait))
+summary(lm(real_lat_s ~ Zoo_final, data = now_trait))
 
 sjPlot::plot_model(lm(real_lat_s ~ Zoo_final, data = now_trait), 
                    type = "pred", terms = "Zoo_final")
-sjPlot::plot_model(lm(real_lat_s ~ Fisheries, data = now_trait), 
-                   type = "pred", terms = "Fisheries")
 
 
 ## 4.3 Plots ####
@@ -288,77 +276,69 @@ sjPlot::plot_model(lm(real_lat_s ~ Fisheries, data = now_trait),
 model0 = gls(real_lat_s ~ TempPrefMean + records, weights = varPower(form = ~ records + TempPrefMean), data = bar_trait)
 model1 = gls(real_lat_s ~ Zoo_final + records, weights = varPower(form = ~ records), data = na.omit(bar_trait[,c("real_lat_s", "records", "Zoo_final")]))
 model2 = gls(real_lat_s ~ DemersPelag + records, weights = varPower(form = ~ records), data = na.omit(bar_trait[,c("real_lat_s", "records", "DemersPelag")]))
+model3 = gls(real_lat_s ~ Troph + records, weights = varPower(form = ~ records), data = na.omit(bar_trait[,c("real_lat_s", "records", "Troph")]))
 
 summary(model0)
 summary(model1)
 summary(model2)
+summary(model3)
 
 plot(predictorEffects(model0)) 
 plot(predictorEffects(model1)) 
 plot(predictorEffects(model2)) 
+plot(predictorEffects(model3)) 
 
 cor(slopes_traits[slopes_traits$Region == "Barents Sea",]$real_lat_s,predict(model0))^2
 cor(slopes_traits[slopes_traits$Region == "Barents Sea",]$real_lat_s,predict(model1))^2
 cor(slopes_traits[slopes_traits$Region == "Barents Sea",]$real_lat_s,predict(model2))^2
+cor(slopes_traits[slopes_traits$Region == "Barents Sea",]$real_lat_s,predict(model3))^2
 
 
 # Norwegian Sea 
 
-model3 = gls(real_lat_s ~ TempPrefMean, data = now_trait)
-model4 = gls(real_lat_s ~ DemersPelag,data = now_trait)
-model5 = gls(real_lat_s ~ Zoo_final,data = now_trait)
-model6 = gls(real_lat_s ~ Fisheries,data = now_trait)
+model4 = gls(real_lat_s ~ TempPrefMean, data = now_trait)
+model5 = gls(real_lat_s ~ DemersPelag,data = now_trait)
+model6 = gls(real_lat_s ~ Zoo_final,data = now_trait)
 
-summary(model3)
 summary(model4)
 summary(model5)
 summary(model6)
 
 # North Sea 
 
-model7 = lm(real_lat_s ~ TempPrefMean, data = nor_trait)
-model7 = lm(real_lat_s ~ AgeMatMin, data = nor_trait)
-model8 = gls(real_lat_s ~ DepthMax, data = nor_trait)
+model8 = lm(real_lat_s ~ AgeMatMin, data = nor_trait)
+model9 = gls(real_lat_s ~ DepthMax, data = nor_trait)
 
-summary(model7)
 summary(model8)
 summary(model9)
-
-sjPlot::plot_model(model5, "pred", terms = "slimit_book", show.data = T)
 
 a = effects::predictorEffects(model0)$TempPrefMean 
 b = effects::predictorEffects(model1)$Zoo_final
 c = effects::predictorEffects(model2)$DemersPelag
+d = effects::predictorEffects(model3)$Troph
 
-d = effects::predictorEffects(model3)$TempPrefMean
-e = effects::predictorEffects(model4)$DemersPelag
-f = effects::predictorEffects(model5)$Zoo_final
+e = effects::predictorEffects(model4)$TempPrefMean
+f = effects::predictorEffects(model5)$DemersPelag
+g = effects::predictorEffects(model6)$Zoo_final
 
-g = effects::predictorEffects(model6)$Fisheries
-h = effects::predictorEffects(model7)$AgeMatMin
-i = effects::predictorEffects(model8)$DepthMax
+i = effects::predictorEffects(model8)$AgeMatMin
+j = effects::predictorEffects(model9)$DepthMax
 
 
 pdf("../figures/Figure_5_traits.pdf", width = 10, height = 9)
-gridExtra::grid.arrange(plot(a, ylab = "Latitudinal shift (km/yr)", col.line = "darkred", band.colors = "darkred", band.transparency = 0.2), 
-                        plot(b, ylab = "Latitudinal shift (km/yr)", col.line = "darkred", CI.color = "darkred", band.transparency = 0.2), 
-                        plot(c, ylab = "Latitudinal shift (km/yr)", col.line = "darkred", confint = list(color = "darkred"), band.transparency = 0.2),
+gridExtra::grid.arrange(plot(a,main = "Barents Sea" ,xlab = "Preferred temperature (°C)", ylab = "Latitudinal shift (km/yr)", col.line = "darkred", band.colors = "darkred", band.transparency = 0.2), 
+                        plot(b,main = "Barents Sea" ,xlab = "Biogeography", ylab = "Latitudinal shift (km/yr)", col.line = "darkred", CI.color = "darkred", band.transparency = 0.2), 
+                        plot(c,main = "Barents Sea" ,xlab = "Habitat", ylab = "Latitudinal shift (km/yr)", col.line = "darkred", confint = list(color = "darkred"), band.transparency = 0.2),
+                        plot(d,main = "Barents Sea" ,xlab = "Trophic level", ylab = "Latitudinal shift (km/yr)", col.line = "darkred", band.colors = "darkred",band.transparency = 0.2),
                         
                         
-                        plot(d, ylab = "Latitudinal shift (km/yr)", col.line = "gold3", band.colors = "gold3", band.transparency = 0.2),
-                        plot(e, ylab = "Latitudinal shift (km/yr)", col.line = "gold3", band.colors = "gold3", band.transparency = 0.2), 
-                        plot(f, ylab = "Latitudinal shift (km/yr)", col.line = "gold3", band.colors = "gold3", band.transparency = 0.2), 
-                        plot(g, ylab = "Latitudinal shift (km/yr)", col.line = "gold3", band.colors = "gold3", band.transparency = 0.2), 
+                        plot(e, main = "Norwegian Sea",xlab = "Preferred temperature (°C)",ylab = "Latitudinal shift (km/yr)", col.line = "gold3", band.colors = "gold3", band.transparency = 0.2), 
+                        plot(f, main = "Norwegian Sea",xlab = "Habitat",ylab = "Latitudinal shift (km/yr)", col.line = "gold3", band.colors = "gold3", band.transparency = 0.2), 
+                        plot(g, main = "Norwegian Sea",xlab = "Biogeography",ylab = "Latitudinal shift (km/yr)", col.line = "gold3", band.colors = "gold3", band.transparency = 0.2), 
+
+                        plot(i,main = "North Sea",xlab ="Minimum age at maturity (yr)" , ylab = "Latitudinal shift (km/yr)", col.line = "aquamarine3", band.colors = "aquamarine3", band.transparency = 0.2),
+                        plot(j,main = "North Sea",xlab ="Maximum depth (m)" , ylab = "Latitudinal shift (km/yr)", col.line = "aquamarine3", band.colors = "aquamarine3", band.transparency = 0.2),
                         
-                        plot(h, ylab = "Latitudinal shift (km/yr)", col.line = "aquamarine3", band.colors = "aquamarine3", band.transparency = 0.2), 
-                        plot(i, ylab = "Latitudinal shift (km/yr)", col.line = "aquamarine3", band.colors = "aquamarine3", band.transparency = 0.2),
-nrow = 3)
+                        nrow = 3)
 
 dev.off()
-
-
-nor_trait_prova = nor_trait %>% mutate(migrant = case_when(lat_p < 0.05 ~ "Migrant",
-                                                           lat_p > 0.05 ~ "Not migrant"))
-
-wilcox.test(nor_trait_prova$AgeMatMin ~ nor_trait_prova$migrant)
-boxplot(nor_trait_prova$AgeMatMin ~ nor_trait_prova$migrant)
