@@ -1,4 +1,6 @@
-
+### Paper: Species geographical latitudinal shifts in the North - Norwegian - Barents Seas
+### Author: Cesc Gordó-Vilaseca
+### Date: 02.08.2023
 
 ## 1. Load thermal envelope and geographic shifts data #### 
 
