@@ -218,7 +218,7 @@ text(1, 14, expression(""), cex = 2)
 text(3, 14, expression("*"), cex = 2) 
 
 text(1, -14, expression("n = 35"), cex = 1.5) 
-text(2, -14, expression("n = 25"), cex = 1.5) 
+text(2, -14, expression("n = 26"), cex = 1.5) 
 text(3, -14, expression("n = 58"), cex = 1.5) 
 
 
